@@ -17,11 +17,15 @@ embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
 
 client = chromadb.PersistentClient(path=CHROMA_DIR)
-collection = client.get_or_create_collection("documents")
+
+
+def get_collection(collection_name):
+    """Get or create a Chroma collection scoped to a specific session/user."""
+    return client.get_or_create_collection(collection_name)
 
 
 def load_text(filepath):
-    
+    """Load text from a local file (PDF or plain text)."""
     if filepath.endswith(".pdf"):
         reader = PdfReader(filepath)
         return "\n".join(page.extract_text() or "" for page in reader.pages)
@@ -40,8 +44,8 @@ def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
     return chunks
 
 
-def process_and_store(text, source_name):
-   
+def process_and_store(text, source_name, collection):
+    """Chunk, embed, and store a piece of text in the given collection."""
     if not text.strip():
         print(f"  Skipping {source_name} — no extractable text.")
         return False
@@ -64,7 +68,9 @@ def process_and_store(text, source_name):
     return True
 
 
-def ingest_documents():
+def ingest_documents(collection_name="documents"):
+    """CLI helper: ingest every file in documents/ into a given (default: shared) collection."""
+    collection = get_collection(collection_name)
     doc_count = 0
     for filename in os.listdir(DOCS_DIR):
         if filename.startswith("."):
@@ -72,10 +78,10 @@ def ingest_documents():
         filepath = os.path.join(DOCS_DIR, filename)
         print(f"Processing {filename}...")
         text = load_text(filepath)
-        if process_and_store(text, source_name=filename):
+        if process_and_store(text, source_name=filename, collection=collection):
             doc_count += 1
 
-    print(f"\nIngested {doc_count} document(s) into Chroma.")
+    print(f"\nIngested {doc_count} document(s) into Chroma collection '{collection_name}'.")
 
 
 if __name__ == "__main__":

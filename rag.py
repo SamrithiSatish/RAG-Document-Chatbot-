@@ -16,7 +16,6 @@ MAX_RETRIES = 2
 
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
-collection = chroma_client.get_or_create_collection("documents")
 claude_client = anthropic.Anthropic()
 
 
@@ -24,15 +23,17 @@ claude_client = anthropic.Anthropic()
 class RAGState(TypedDict):
     question: str
     search_query: str
+    collection_name: str
     retrieved_docs: List[str]
     answer: str
     retry_count: int
 
 
-
 def retrieve(state: RAGState) -> RAGState:
+    collection = chroma_client.get_or_create_collection(state["collection_name"])
     query = state.get("search_query") or state["question"]
-    print(f"  [retrieve] Searching for: {query}")
+    print(f"  [retrieve] Searching '{state['collection_name']}' for: {query}")
+
     query_embedding = embedder.encode([query]).tolist()
     results = collection.query(
         query_embeddings=query_embedding,
@@ -43,7 +44,6 @@ def retrieve(state: RAGState) -> RAGState:
 
 
 def grade_documents(state: RAGState) -> str:
-    """Decide whether retrieved docs are relevant enough to answer, or whether to retry."""
     if state.get("retry_count", 0) >= MAX_RETRIES:
         print("  [grading] Max retries reached, generating anyway.")
         return "generate"
@@ -74,7 +74,6 @@ Does this context contain information that could help answer the question? Reply
 
 
 def retrieve_again(state: RAGState) -> RAGState:
-    """Rewrite the query to try to get better retrieval results, then loop back."""
     current_retry = state.get("retry_count", 0) + 1
     print(f"  [retry {current_retry}] Rewriting query...")
 
@@ -148,7 +147,11 @@ if __name__ == "__main__":
         question = input("Ask a question: ")
         if question.lower() in ("quit", "exit"):
             break
-        result = app_graph.invoke({"question": question, "retry_count": 0})
+        result = app_graph.invoke({
+            "question": question,
+            "collection_name": "documents",
+            "retry_count": 0,
+        })
         print("\n--- ANSWER ---")
         print(result["answer"])
         print("\n--- SOURCES USED ---")

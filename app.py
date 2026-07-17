@@ -1,8 +1,9 @@
 import streamlit as st
 import tempfile
 import os
+import uuid
 from rag import app_graph
-from ingest import load_text, process_and_store
+from ingest import load_text, process_and_store, get_collection
 
 st.set_page_config(
     page_title="Document RAG Chatbot",
@@ -27,6 +28,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+collection_name = f"session_{st.session_state.session_id}"
+
+
 with st.sidebar:
     st.header("About this project")
     st.markdown(
@@ -47,7 +53,8 @@ with st.sidebar:
                 tmp.write(uploaded_file.read())
                 tmp_path = tmp.name
             text = load_text(tmp_path)
-            success = process_and_store(text, source_name=uploaded_file.name)
+            collection = get_collection(collection_name)
+            success = process_and_store(text, source_name=uploaded_file.name, collection=collection)
             os.unlink(tmp_path)
         if success:
             st.success("Added!")
@@ -61,9 +68,8 @@ with st.sidebar:
 
 
 st.title("📚 Document RAG Chatbot")
-st.caption("Ask questions about any document you've added — answers are grounded only in retrieved context.")
+st.caption("Ask questions about documents you've added — your uploads are private to this session and answers are grounded only in retrieved context.")
 st.divider()
-
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -86,7 +92,11 @@ if question := st.chat_input("Ask a question about your documents..."):
 
     with st.chat_message("assistant", avatar="🤖"):
         with st.spinner("🔍 Searching documents..."):
-            result = app_graph.invoke({"question": question})
+            result = app_graph.invoke({
+                "question": question,
+                "collection_name": collection_name,
+                "retry_count": 0,
+            })
 
         answer = result["answer"]
         sources = result["retrieved_docs"]
