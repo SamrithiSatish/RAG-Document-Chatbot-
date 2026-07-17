@@ -67,6 +67,12 @@ streamlit run app.py
 
 The chatbot will open in your browser, and you can upload additional documents directly from the Streamlit sidebar.
 
+## Live Demo
+
+🔗 **[Try the chatbot](https://8xm5xuhdoh5gfvssv9txl7.streamlit.app)**
+
+> **Note:** After uploading a document, click **Ingest File** before asking questions so it can be added to the knowledge base.
+
 ## Project Structure
 
 - **`app.py`** – Streamlit user interface
