@@ -3,7 +3,7 @@ import tempfile
 import os
 import uuid
 from rag import app_graph
-from ingest import load_text, process_and_store, get_collection
+from ingest import load_text, process_and_store, get_collection, reset_collection
 
 st.set_page_config(
     page_title="Document RAG Chatbot",
@@ -62,10 +62,13 @@ with st.sidebar:
             st.error("Couldn't extract text from that file.")
 
     st.divider()
+    if st.button("🗑️ Clear documents", use_container_width=True):
+        reset_collection(collection_name)
+        st.success("Knowledge base cleared.")
+
     if st.button("🗑️ Clear chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
-
 
 st.title("📚 Document RAG Chatbot")
 st.caption("Ask questions about documents you've added — your uploads are private to this session and answers are grounded only in retrieved context.")

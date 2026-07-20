@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
 import chromadb
+import pdfplumber
 
 load_dotenv()
 
@@ -23,12 +24,23 @@ def get_collection(collection_name):
     """Get or create a Chroma collection scoped to a specific session/user."""
     return client.get_or_create_collection(collection_name)
 
+def reset_collection(collection_name):
+    """Delete a session's collection entirely, wiping its stored documents."""
+    try:
+        client.delete_collection(collection_name)
+    except Exception:
+        pass  
 
 def load_text(filepath):
     """Load text from a local file (PDF or plain text)."""
     if filepath.endswith(".pdf"):
-        reader = PdfReader(filepath)
-        return "\n".join(page.extract_text() or "" for page in reader.pages)
+        text_parts = []
+        with pdfplumber.open(filepath) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text_parts.append(page_text)
+        return "\n".join(text_parts)
     else:
         with open(filepath, "r", encoding="utf-8") as f:
             return f.read()
