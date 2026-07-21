@@ -10,8 +10,8 @@ load_dotenv()
 
 DOCS_DIR = "documents"
 CHROMA_DIR = "chroma_db"
-CHUNK_SIZE = 800
-CHUNK_OVERLAP = 100
+CHUNK_SIZE = 1200
+CHUNK_OVERLAP = 200
 
 
 embedder = SentenceTransformer("all-MiniLM-L6-v2")

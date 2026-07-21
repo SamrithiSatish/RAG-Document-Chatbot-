@@ -10,7 +10,7 @@ load_dotenv()
 
 
 CHROMA_DIR = "chroma_db"
-TOP_K = 3
+TOP_K = 6
 MAX_RETRIES = 2
 
 
